@@ -133,3 +133,7 @@ a.change_api_key {
     float: none;
     vertical-align: top;
 }
+
+.wider-text {
+    width: 38em;
+}

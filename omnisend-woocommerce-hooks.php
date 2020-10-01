@@ -270,5 +270,49 @@ function omnisend_plugin_updates()
         }
     }
 }
+
+function omnisend_checkbox_custom_checkout_field( $checkout ) {
+    $omnisend_settings = get_option('omnisend_checkout_opt_in_text');
+
+    woocommerce_form_field( 'omnisend_newsletter_checkbox', array(
+    'type'          => 'checkbox',
+    'class'         => array('omnisend_newsletter_checkbox_field'),
+    'label'         => $omnisend_settings,
+    'value'  => true,
+    'default' => 0,
+    'required'  => false,
+    ), $checkout->get_value( 'omnisend_newsletter_checkbox' ));
+}
+
+function omnisend_update_contact_status ( $order_id ) {
+
+    if ( isset( $_POST['omnisend_newsletter_checkbox'] ) && $_POST['omnisend_newsletter_checkbox'] ) {
+        add_post_meta($order_id, 'marketing_opt_in_consent', "checkout", true);
+
+        $preparedContact = array(
+                "email" => $_POST['billing_email'],
+                "status" => "subscribed",
+                "statusDate" => date(DATE_ATOM, time()),
+                "tags" => [
+                    "source: checkout"
+                ]
+            );
+
+        $link = OMNISEND_URL . "contacts";
+        $curlResult = OmnisendHelper::omnisendApi($link, "POST", $preparedContact);        
+    }
+
+}
+
+$omnisend_settings = get_option('omnisend_checkout_opt_in_text');
+
+if (!empty($omnisend_settings)) {
+    // Add the checkbox field
+    add_action('woocommerce_after_checkout_billing_form', 'omnisend_checkbox_custom_checkout_field');
+
+    // update contact status
+    add_action('woocommerce_checkout_update_order_meta', 'omnisend_update_contact_status');
+
+}
 add_action('plugins_loaded', 'omnisend_plugin_updates');
 ?>

@@ -24,14 +24,24 @@ function omnisend_show_settings_page()
                 delete_metadata("user", "0", "omnisend_last_sync", 'error', true);
                 delete_metadata("term", "0", "omnisend_last_sync", 'error', true);
                 break;
+
+            case "omnisend_show_checkout_opt_in":
+                $checkout_opt_in = sanitize_text_field($_POST["checkout_opt_in"]);
+                if ($checkout_opt_in) {
+                    update_option("omnisend_checkout_opt_in_text", $checkout_opt_in);
+                } else {
+                    delete_option("omnisend_checkout_opt_in_text");
+                }
+
+                break;
         }
     }
 
     ?>
-	<div class="settings-page">
-	    <div class="omnisend-logo"><a href="http://www.omnisend.com" target="_blank"><img src="<?php echo plugin_dir_url(__FILE__) . 'assets/img/logo.svg'; ?>"></a></div>
-		<h1>Omnisend Plugin for Woocommerce - v.<?php echo $omnisendPluginVersion; ?></h1>
-	<?php
+    <div class="settings-page">
+        <div class="omnisend-logo"><a href="http://www.omnisend.com" target="_blank"><img src="<?php echo plugin_dir_url(__FILE__) . 'assets/img/logo.svg'; ?>"></a></div>
+        <h1>Omnisend Plugin for Woocommerce - v.<?php echo $omnisendPluginVersion; ?></h1>
+    <?php
 
 /*Check if WooCommerce is active*/
     if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
@@ -49,8 +59,8 @@ function omnisend_show_settings_page()
         }
         ?>
 
-		<div class="api-key-status">
-			<?php
+        <div class="api-key-status">
+            <?php
 if ($omnisend_api_key !== null) {
             echo '<h3 class="current-api-key">Your site is now successfully connected to Omnisend.<p><span><b>Used API KEY:</b> <span>' . $omnisend_api_key . '</span></h3><a class="change_api_key">Use different API key</a>';
             $api_dn = "omnisend_dn";
@@ -62,24 +72,26 @@ if ($omnisend_api_key !== null) {
         ?>
         <div class="api-key-form-wrapper <?php echo $api_dn ?>">
         <form id="api-key-form">
-				<input type="text" name="api-key" id="api-key" class="regular-text" placeholder="API key">
-				<input type="submit" name="api-key-submit" id="api-key-submit" class="button button-primary" value="Save">
+                <input type="text" name="api-key" id="api-key" class="regular-text" placeholder="API key">
+                <input type="submit" name="api-key-submit" id="api-key-submit" class="button button-primary" value="Save">
                 <div class="spinner omni_loader"></div>
-			</form>
-			<h4 class="response-message"></h4>
-			<p><a href="https://support.omnisend.com/api-documentation/generating-api-key" target="_blank">How to acquire Omnisend API key</a></p>
+            </form>
+            <h4 class="response-message"></h4>
+            <p><a href="https://support.omnisend.com/api-documentation/generating-api-key" target="_blank">How to acquire Omnisend API key</a></p>
             <p>If your current Omnisend account is already connected with another site, you will need to create a new account and generate your new API key there for this site.</p>
          </div>
-		</div>
+        </div>
 
 
 
-		<?php
+        <?php
 if ($omnisend_api_key !== null) {
             $counts = OmnisendLogger::getSyncCount();
             $permissions = OmnisendManagerAssistant::getApiKeyPermissions();
             $listID = get_option('omnisend_list_id', null);
             $tag = get_option('omnisend_contact_tag', null);
+            $checkout_opt_in = get_option('omnisend_checkout_opt_in_text', null);
+
             if ($tag == "" && $listID != "") {
                 $list = OmnisendManagerAssistant::getList($listID);
                 if ($list && array_key_exists("name", $list) && array_key_exists("listID", $list)) {
@@ -98,10 +110,21 @@ if ($omnisend_api_key !== null) {
                     <input type='submit' value='Update' class='button button-primary clean-log'>
                     </form>
         </div>
+
+         <div class="logger-section">
+            <h3>Checkout opt-in</h3>
+            <p>Show opt-in checkbox in the checkout page? ( leave empty to hide checkbox )</p>
+            <form method='post'>
+                <input type='hidden' name='action' value='omnisend_show_checkout_opt_in'>
+                <input type="text" name='checkout_opt_in' placeholder="Newsletter opt-in text ( label )" class='wider-text' value="<?php echo $checkout_opt_in; ?>">
+                <input type='submit' value='Update' class='button button-primary clean-log'>
+            </form>
+        </div>
+
             <div class="logger-section">
             <h3>API Key permissions</h3>
             <?php
-$err = 0;
+            $err = 0;
             foreach ($permissions as $key => $p) {
                 echo "<b>" . ucfirst($key) . ": </b>";
                 if ($p) {
@@ -117,11 +140,11 @@ $err = 0;
             }
             ?>
         </div>
-		<div class="logger-section">
+        <div class="logger-section">
             <h3>Sync statistics</h3>
-			<p>Request to Omnisend count:</p>
-			<b>Contacts:</b> <?php echo $counts['contacts']; ?><br>
-			<b>Orders:</b> <?php echo $counts['orders']; ?><br>
+            <p>Request to Omnisend count:</p>
+            <b>Contacts:</b> <?php echo $counts['contacts']; ?><br>
+            <b>Orders:</b> <?php echo $counts['orders']; ?><br>
             <b>Products:</b> <?php echo $counts['products']; ?><br>
             <b>Categories:</b> <?php echo $counts['categories']; ?><br>
             <b>Carts:</b> <?php echo $counts['carts']; ?><br>
@@ -144,21 +167,21 @@ if (get_option('omnisend_sync_products_finished', null) & get_option('omnisend_s
         $install_link = esc_url(network_admin_url('plugin-install.php?s=woocommerce&tab=search&type=term'));
         if (OmnisendHelper::checkWpWcCompatibility()) {
             ?>
-				<div class="omnisend-page">
-					<h2 class="omnisend-warning">Please, Install or Activate <a href="<?php echo $install_link; ?>">Woocommerce</a>!</h2>
-				</div>
+                <div class="omnisend-page">
+                    <h2 class="omnisend-warning">Please, Install or Activate <a href="<?php echo $install_link; ?>">Woocommerce</a>!</h2>
+                </div>
 <?php
 } else {
             /*If Wordpress version is not supported by Woocommerce - show message*/
             ?>
-				<div class="omnisend-page">
-					<h2 class="omnisend-warning">Please update Wordpress - current version is not supported by actual Woocommerce version!</h2>
-				</div>
+                <div class="omnisend-page">
+                    <h2 class="omnisend-warning">Please update Wordpress - current version is not supported by actual Woocommerce version!</h2>
+                </div>
 <?php
 }
     }
     ?>
-	</div>
+    </div>
 <?php
 }
 ?>
